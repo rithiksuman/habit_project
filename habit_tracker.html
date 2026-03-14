@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans, 'Segoe UI', sans-serif); background: var(--color-background-tertiary); min-height: 100vh; color: var(--color-text-primary); font-size: 14px; }
+
+#auth-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; }
+.auth-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: 12px; padding: 2.5rem; width: 100%; max-width: 380px; }
+.auth-logo { font-size: 26px; font-weight: 500; margin-bottom: 4px; }
+.auth-sub { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 1.5rem; }
+.auth-tabs { display: flex; border: 0.5px solid var(--color-border-tertiary); border-radius: 8px; overflow: hidden; margin-bottom: 1.5rem; }
+.auth-tab { flex: 1; padding: 8px; text-align: center; font-size: 13px; cursor: pointer; background: transparent; color: var(--color-text-secondary); border: none; }
+.auth-tab.active { background: var(--color-background-secondary); color: var(--color-text-primary); font-weight: 500; }
+.field { margin-bottom: 1rem; }
+.field label { display: block; font-size: 12px; color: var(--color-text-secondary); margin-bottom: 5px; }
+.field input { width: 100%; padding: 8px 12px; border: 0.5px solid var(--color-border-secondary); border-radius: 8px; background: var(--color-background-secondary); color: var(--color-text-primary); font-size: 14px; outline: none; }
+.btn-primary { width: 100%; padding: 10px; border: none; border-radius: 8px; background: #3C3489; color: #fff; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 4px; }
+.btn-primary:hover { background: #534AB7; }
+.auth-msg { font-size: 12px; text-align: center; margin-top: 10px; min-height: 16px; }
+.auth-msg.error { color: #A32D2D; }
+.auth-msg.success { color: #0F6E56; }
+
+#app { display: none; }
+.layout { display: flex; min-height: 100vh; }
+.sidebar { width: 210px; flex-shrink: 0; background: var(--color-background-primary); border-right: 0.5px solid var(--color-border-tertiary); padding: 1.5rem 0.75rem; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; }
+.logo { font-size: 17px; font-weight: 500; padding: 0 0.5rem; }
+.username { font-size: 12px; color: var(--color-text-secondary); padding: 0 0.5rem; margin: 3px 0 1.25rem; }
+.nav-btn { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px; font-size: 13px; cursor: pointer; color: var(--color-text-secondary); margin-bottom: 2px; user-select: none; }
+.nav-btn:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+.nav-btn.active { background: var(--color-background-secondary); color: var(--color-text-primary); }
+.sidebar-bottom { margin-top: auto; }
+.main { margin-left: 210px; padding: 2rem; flex: 1; }
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-size: 21px; font-weight: 500; margin-bottom: 3px; }
+.page-sub { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 1.25rem; }
+
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem; }
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; margin-bottom: 1.25rem; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 1.25rem; margin-bottom: 1.25rem; }
+.mcard { background: var(--color-background-secondary); border-radius: 8px; padding: 1rem; }
+.mlabel { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 3px; }
+.mval { font-size: 22px; font-weight: 500; }
+
+.row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.row:last-child { border-bottom: none; }
+.circle { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--color-border-secondary); display: flex; align-items: center; justify-content: center; font-size: 11px; cursor: pointer; flex-shrink: 0; transition: background 0.15s, border-color 0.15s; }
+.circle.done { background: #1D9E75; border-color: #1D9E75; color: #fff; }
+.info { flex: 1; min-width: 0; }
+.hname { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hmeta { font-size: 11px; color: var(--color-text-secondary); margin-top: 1px; }
+.streak-text { font-size: 12px; color: #BA7517; font-weight: 500; white-space: nowrap; }
+.del-btn { padding: 3px 10px; border: 0.5px solid var(--color-border-tertiary); border-radius: 6px; font-size: 12px; cursor: pointer; color: var(--color-text-secondary); background: transparent; flex-shrink: 0; }
+.del-btn:hover { background: #FCEBEB; color: #A32D2D; border-color: #F09595; }
+
+.add-bar { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.add-bar input, .add-bar select { padding: 8px 12px; border: 0.5px solid var(--color-border-secondary); border-radius: 8px; background: var(--color-background-secondary); color: var(--color-text-primary); font-size: 13px; outline: none; }
+.add-bar .txt { flex: 1; min-width: 140px; }
+.btn-add { padding: 8px 16px; border: none; border-radius: 8px; background: #3C3489; color: #fff; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.btn-add:hover { background: #534AB7; }
+
+.evrow { display: flex; gap: 10px; align-items: flex-start; padding: 11px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.evrow:last-child { border-bottom: none; }
+.evdot { width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+
+.sgrid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; margin-top: 10px; }
+.scell { aspect-ratio: 1; border-radius: 2px; background: var(--color-background-secondary); }
+.scell.done { background: #1D9E75; }
+.scell.today-cell { background: #9FE1CB; }
+
+.cal-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.cal-nav { padding: 4px 10px; border: 0.5px solid var(--color-border-tertiary); border-radius: 8px; cursor: pointer; background: transparent; color: var(--color-text-primary); font-size: 13px; }
+.cgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cwday { text-align: center; font-size: 11px; color: var(--color-text-secondary); padding: 3px 0; }
+.cday { aspect-ratio: 1; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; border: 0.5px solid transparent; }
+.cday.is-today { border-color: #534AB7; color: #534AB7; font-weight: 500; }
+.cday.has-habit { background: #E1F5EE; }
+.cday.has-event { background: #EEEDFE; }
+.cday.has-both { background: #E1F5EE; border-color: #534AB7; }
+.cdot { width: 5px; height: 5px; border-radius: 50%; margin-top: 2px; }
+.legend { display: flex; gap: 14px; margin-top: 12px; font-size: 12px; color: var(--color-text-secondary); align-items: center; }
+.lbox { display: inline-block; width: 11px; height: 11px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+.sec-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.sec-title { font-size: 15px; font-weight: 500; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; background: #E1F5EE; color: #0F6E56; }
+.empty { font-size: 13px; color: var(--color-text-secondary); padding: 10px 0; }
+.stobar { background: var(--color-background-secondary); border-radius: 8px; padding: 9px 14px; font-size: 12px; color: var(--color-text-secondary); display: flex; align-items: center; gap: 8px; margin-bottom: 1.25rem; }
+.stdot { width: 7px; height: 7px; border-radius: 50%; background: #1D9E75; }
+</style>
+</head>
+<body>
+
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">Habitly</div>
+    <div class="auth-sub">Track your habits, build your life.</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign in</button>
+      <button class="auth-tab" id="tab-reg" onclick="switchTab('register')">Register</button>
+    </div>
+    <div id="form-login">
+      <div class="field"><label>User ID</label><input id="l-id" type="text" placeholder="your_username" /></div>
+      <div class="field"><label>Password</label><input id="l-pw" type="password" placeholder="••••••••" /></div>
+      <button class="btn-primary" onclick="doLogin()">Sign in</button>
+    </div>
+    <div id="form-reg" style="display:none">
+      <div class="field"><label>User ID</label><input id="r-id" type="text" placeholder="choose_username" /></div>
+      <div class="field"><label>Password</label><input id="r-pw" type="password" placeholder="min 4 chars" /></div>
+      <div class="field"><label>Confirm password</label><input id="r-pw2" type="password" placeholder="repeat" /></div>
+      <button class="btn-primary" onclick="doRegister()">Create account</button>
+    </div>
+    <div class="auth-msg" id="auth-msg"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="layout">
+    <div class="sidebar">
+      <div class="logo">Habitly</div>
+      <div class="username" id="sb-user"></div>
+      <div class="nav-btn active" id="nav-dashboard" onclick="gotoPage('dashboard')">◈ &nbsp;Dashboard</div>
+      <div class="nav-btn" id="nav-habits" onclick="gotoPage('habits')">✓ &nbsp;Habits</div>
+      <div class="nav-btn" id="nav-events" onclick="gotoPage('events')">◉ &nbsp;Events</div>
+      <div class="nav-btn" id="nav-streaks" onclick="gotoPage('streaks')">▲ &nbsp;Streaks</div>
+      <div class="nav-btn" id="nav-calendar" onclick="gotoPage('calendar')">□ &nbsp;Month Schedule</div>
+      <div class="sidebar-bottom">
+        <div class="nav-btn" onclick="doLogout()">← &nbsp;Sign out</div>
+      </div>
+    </div>
+    <div class="main">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-title" id="d-greeting">Good day!</div>
+        <div class="page-sub" id="d-date"></div>
+        <div class="stobar"><div class="stdot"></div><span id="sto-info">Saved to browser</span></div>
+        <div class="grid4">
+          <div class="mcard"><div class="mlabel">Today's habits</div><div class="mval" id="m-today">0/0</div></div>
+          <div class="mcard"><div class="mlabel">Best streak</div><div class="mval" id="m-streak">🔥 0</div></div>
+          <div class="mcard"><div class="mlabel">Total habits</div><div class="mval" id="m-total">0</div></div>
+          <div class="mcard"><div class="mlabel">Events</div><div class="mval" id="m-events">0</div></div>
+        </div>
+        <div class="grid2">
+          <div class="card">
+            <div class="sec-hdr"><div class="sec-title">Today's habits</div><span class="badge" id="d-pct">0%</span></div>
+            <div id="d-habits"></div>
+          </div>
+          <div class="card">
+            <div class="sec-hdr"><div class="sec-title">Upcoming events</div></div>
+            <div id="d-events"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HABITS -->
+      <div class="page" id="page-habits">
+        <div class="page-title">Habits</div>
+        <div class="page-sub">Add, complete, and manage your habits</div>
+        <div class="add-bar">
+          <input class="txt" id="h-input" type="text" placeholder="New habit name..." />
+          <select id="h-freq"><option value="daily">Daily</option><option value="weekly">Weekly</option></select>
+          <button class="btn-add" onclick="addHabit()">+ Add habit</button>
+        </div>
+        <div class="card"><div id="h-list"></div></div>
+      </div>
+
+      <!-- EVENTS -->
+      <div class="page" id="page-events">
+        <div class="page-title">Events</div>
+        <div class="page-sub">Log important events and milestones</div>
+        <div class="add-bar">
+          <input class="txt" id="e-input" type="text" placeholder="Event title..." />
+          <input id="e-date" type="date" style="padding:8px 12px;border:0.5px solid var(--color-border-secondary);border-radius:8px;background:var(--color-background-secondary);color:var(--color-text-primary);font-size:13px;outline:none;" />
+          <select id="e-color" style="padding:8px 12px;border:0.5px solid var(--color-border-secondary);border-radius:8px;background:var(--color-background-secondary);color:var(--color-text-primary);font-size:13px;outline:none;">
+            <option value="#534AB7">Purple</option>
+            <option value="#1D9E75">Green</option>
+            <option value="#D85A30">Coral</option>
+            <option value="#BA7517">Amber</option>
+          </select>
+          <button class="btn-add" id="ev-add-btn">+ Add event</button>
+        </div>
+        <div class="card"><div id="e-list"></div></div>
+      </div>
+
+      <!-- STREAKS -->
+      <div class="page" id="page-streaks">
+        <div class="page-title">Streaks</div>
+        <div class="page-sub">Your consistency over the last 84 days</div>
+        <div id="s-cards"></div>
+      </div>
+
+      <!-- CALENDAR -->
+      <div class="page" id="page-calendar">
+        <div class="page-title">Month Schedule</div>
+        <div class="page-sub">Habits and events at a glance</div>
+        <div class="card">
+          <div class="cal-hdr">
+            <button class="cal-nav" id="cal-prev">← Prev</button>
+            <span style="font-size:15px;font-weight:500;" id="cal-label"></span>
+            <button class="cal-nav" id="cal-next">Next →</button>
+          </div>
+          <div class="cgrid" id="cal-wdays"></div>
+          <div style="margin-bottom:7px;"></div>
+          <div class="cgrid" id="cal-days"></div>
+          <div class="legend">
+            <span><span class="lbox" style="background:#E1F5EE;"></span>Habit done</span>
+            <span><span class="lbox" style="background:#EEEDFE;"></span>Event</span>
+            <span><span class="lbox" style="border:1.5px solid #534AB7;"></span>Today</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Tiny safe localStorage wrapper ──────────────────────────────
+var S = {
+  get: function(k) {
+    try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch(e) { return null; }
+  },
+  set: function(k, v) {
+    try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch(e) { return false; }
+  },
+  del: function(k) {
+    try { localStorage.removeItem(k); } catch(e) {}
+  }
+};
+
+// ── Current session ─────────────────────────────────────────────
+var CU = null; // current username
+var calY, calM;
+
+function todayStr() {
+  var d = new Date();
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+}
+function pad(n) { return n < 10 ? '0'+n : ''+n; }
+function dateStr(d) { return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()); }
+function uk(k) { return 'hl_' + CU + '_' + k; }
+
+function getHabits() { return S.get(uk('habits')) || []; }
+function putHabits(h) { S.set(uk('habits'), h); }
+function getEvents() { return S.get(uk('events')) || []; }
+function putEvents(e) { S.set(uk('events'), e); }
+
+// ── Auth ────────────────────────────────────────────────────────
+function getUsers() { return S.get('hl_users') || {}; }
+function putUsers(u) { S.set('hl_users', u); }
+
+function hashPw(pw) {
+  var h = 5381;
+  for (var i = 0; i < pw.length; i++) h = ((h << 5) + h) + pw.charCodeAt(i);
+  return (h >>> 0).toString(36);
+}
+
+function msg(txt, cls) {
+  var el = document.getElementById('auth-msg');
+  el.textContent = txt;
+  el.className = 'auth-msg' + (cls ? ' '+cls : '');
+}
+
+function switchTab(tab) {
+  var isLogin = tab === 'login';
+  document.getElementById('form-login').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('form-reg').style.display = isLogin ? 'none' : 'block';
+  document.getElementById('tab-login').className = 'auth-tab' + (isLogin ? ' active' : '');
+  document.getElementById('tab-reg').className = 'auth-tab' + (!isLogin ? ' active' : '');
+  msg('', '');
+}
+
+function doRegister() {
+  var id = document.getElementById('r-id').value.trim();
+  var pw = document.getElementById('r-pw').value;
+  var pw2 = document.getElementById('r-pw2').value;
+  if (!id) return msg('User ID is required.', 'error');
+  if (pw.length < 4) return msg('Password must be at least 4 characters.', 'error');
+  if (pw !== pw2) return msg('Passwords do not match.', 'error');
+  var users = getUsers();
+  if (users[id]) return msg('User ID already taken.', 'error');
+  users[id] = hashPw(pw);
+  putUsers(users);
+  msg('Account created! Signing in…', 'success');
+  setTimeout(function() { startSession(id); }, 700);
+}
+
+function doLogin() {
+  var id = document.getElementById('l-id').value.trim();
+  var pw = document.getElementById('l-pw').value;
+  if (!id || !pw) return msg('Please enter user ID and password.', 'error');
+  var users = getUsers();
+  if (!users[id]) return msg('User not found. Please register first.', 'error');
+  if (users[id] !== hashPw(pw)) return msg('Incorrect password.', 'error');
+  startSession(id);
+}
+
+function startSession(id) {
+  CU = id;
+  S.set('hl_session', id);
+  document.getElementById('sb-user').textContent = '@' + id;
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  var now = new Date();
+  calY = now.getFullYear();
+  calM = now.getMonth();
+  document.getElementById('e-date').value = todayStr();
+  renderAll();
+}
+
+function doLogout() {
+  S.del('hl_session');
+  CU = null;
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('l-id').value = '';
+  document.getElementById('l-pw').value = '';
+  msg('', '');
+}
+
+// ── Navigation ──────────────────────────────────────────────────
+function gotoPage(name) {
+  document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.nav-btn').forEach(function(n) { n.classList.remove('active'); });
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  renderAll();
+}
+
+// ── Dashboard ───────────────────────────────────────────────────
+function renderDashboard() {
+  var habits = getHabits();
+  var events = getEvents();
+  var today = todayStr();
+  var hr = new Date().getHours();
+  var greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('d-greeting').textContent = greet + ', @' + CU + '!';
+  document.getElementById('d-date').textContent = new Date().toDateString();
+
+  var done = 0;
+  habits.forEach(function(h) { if (h.completions && h.completions[today]) done++; });
+  var total = habits.length;
+  var pct = total ? Math.round(done / total * 100) : 0;
+  var best = 0;
+  habits.forEach(function(h) { if ((h.streak||0) > best) best = h.streak; });
+
+  document.getElementById('m-today').textContent = done + '/' + total;
+  document.getElementById('m-streak').textContent = '🔥 ' + best;
+  document.getElementById('m-total').textContent = total;
+  document.getElementById('m-events').textContent = events.length;
+  document.getElementById('d-pct').textContent = pct + '%';
+
+  // storage info
+  document.getElementById('sto-info').textContent =
+    'Saved to browser · ' + total + ' habit' + (total !== 1 ? 's' : '') +
+    ' · ' + events.length + ' event' + (events.length !== 1 ? 's' : '');
+
+  var dh = document.getElementById('d-habits');
+  if (!habits.length) {
+    dh.innerHTML = '<div class="empty">No habits yet. Add some in Habits!</div>';
+  } else {
+    dh.innerHTML = habits.map(function(h) {
+      var isDone = h.completions && h.completions[today];
+      return '<div class="row">' +
+        '<div class="circle' + (isDone ? ' done' : '') + '" data-hid="' + h.id + '" data-ctx="dash">✓</div>' +
+        '<div class="info"><div class="hname">' + esc(h.name) + '</div><div class="hmeta">' + h.freq + '</div></div>' +
+        '<span class="streak-text">🔥 ' + (h.streak||0) + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  var de = document.getElementById('d-events');
+  var sorted = events.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+  if (!sorted.length) {
+    de.innerHTML = '<div class="empty">No events yet. Add some in Events!</div>';
+  } else {
+    de.innerHTML = sorted.slice(0,4).map(function(e) {
+      return '<div class="evrow">' +
+        '<div class="evdot" style="background:' + e.color + '"></div>' +
+        '<div><div style="font-size:13px;font-weight:500;">' + esc(e.title) + '</div>' +
+        '<div class="hmeta">' + e.date + '</div></div>' +
+        '</div>';
+    }).join('');
+  }
+}
+
+// ── Habits ──────────────────────────────────────────────────────
+function renderHabits() {
+  var habits = getHabits();
+  var today = todayStr();
+  var list = document.getElementById('h-list');
+  if (!habits.length) {
+    list.innerHTML = '<div class="empty">No habits yet. Add one above!</div>';
+    return;
+  }
+  list.innerHTML = habits.map(function(h) {
+    var isDone = h.completions && h.completions[today];
+    return '<div class="row">' +
+      '<div class="circle' + (isDone ? ' done' : '') + '" data-hid="' + h.id + '" data-ctx="list">✓</div>' +
+      '<div class="info">' +
+        '<div class="hname">' + esc(h.name) + '</div>' +
+        '<div class="hmeta">' + h.freq + ' &nbsp;·&nbsp; <span class="streak-text">🔥 ' + (h.streak||0) + ' day streak</span></div>' +
+      '</div>' +
+      '<button class="del-btn" data-did="' + h.id + '">Delete</button>' +
+      '</div>';
+  }).join('');
+}
+
+function addHabit() {
+  var name = document.getElementById('h-input').value.trim();
+  var freq = document.getElementById('h-freq').value;
+  if (!name) { alert('Please enter a habit name.'); return; }
+  var habits = getHabits();
+  habits.push({ id: 'h_' + Date.now(), name: name, freq: freq, streak: 0, completions: {} });
+  putHabits(habits);
+  document.getElementById('h-input').value = '';
+  renderAll();
+}
+
+function deleteHabit(id) {
+  putHabits(getHabits().filter(function(h){ return h.id !== id; }));
+  renderAll();
+}
+
+function toggleHabit(id) {
+  var today = todayStr();
+  var habits = getHabits();
+  var idx = -1;
+  for (var i = 0; i < habits.length; i++) { if (habits[i].id === id) { idx = i; break; } }
+  if (idx === -1) return;
+  var h = habits[idx];
+  if (!h.completions) h.completions = {};
+  if (h.completions[today]) {
+    delete h.completions[today];
+    h.streak = Math.max(0, (h.streak||1) - 1);
+  } else {
+    h.completions[today] = true;
+    h.streak = (h.streak||0) + 1;
+  }
+  habits[idx] = h;
+  putHabits(habits);
+  renderAll();
+}
+
+// ── Events ──────────────────────────────────────────────────────
+function renderEvents() {
+  var events = getEvents();
+  var list = document.getElementById('e-list');
+  var sorted = events.slice().sort(function(a,b){ return a.date.localeCompare(b.date); });
+  if (!sorted.length) {
+    list.innerHTML = '<div class="empty">No events yet. Add one above!</div>';
+    return;
+  }
+  list.innerHTML = sorted.map(function(e) {
+    return '<div class="evrow">' +
+      '<div class="evdot" style="background:' + e.color + ';margin-top:5px;"></div>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:14px;font-weight:500;">' + esc(e.title) + '</div>' +
+        '<div class="hmeta">' + e.date + '</div>' +
+      '</div>' +
+      '<button class="del-btn" data-eid="' + e.id + '">Delete</button>' +
+      '</div>';
+  }).join('');
+}
+
+function addEvent() {
+  var title = document.getElementById('e-input').value.trim();
+  var date  = document.getElementById('e-date').value;
+  var color = document.getElementById('e-color').value;
+  if (!title) { alert('Please enter an event title.'); return; }
+  if (!date)  { alert('Please select a date.'); return; }
+  var events = getEvents();
+  events.push({ id: 'e_' + Date.now(), title: title, date: date, color: color });
+  putEvents(events);
+  document.getElementById('e-input').value = '';
+  renderEvents();
+  renderDashboard();
+}
+
+// ── Streaks ─────────────────────────────────────────────────────
+function renderStreaks() {
+  var habits = getHabits();
+  var today = todayStr();
+  var days = [];
+  for (var i = 83; i >= 0; i--) {
+    var d = new Date(); d.setDate(d.getDate() - i);
+    days.push(dateStr(d));
+  }
+  var container = document.getElementById('s-cards');
+  if (!habits.length) {
+    container.innerHTML = '<div class="card"><div class="empty">No habits to show streaks for yet.</div></div>';
+    return;
+  }
+  container.innerHTML = habits.map(function(h) {
+    var cells = days.map(function(d) {
+      var done = h.completions && h.completions[d];
+      var cls = 'scell' + (done ? ' done' : (d === today ? ' today-cell' : ''));
+      return '<div class="' + cls + '" title="' + d + '"></div>';
+    }).join('');
+    return '<div class="card">' +
+      '<div class="sec-hdr">' +
+        '<div><div class="sec-title">' + esc(h.name) + '</div><div style="font-size:11px;color:var(--color-text-secondary);">' + h.freq + '</div></div>' +
+        '<span class="streak-text" style="font-size:15px;">🔥 ' + (h.streak||0) + ' day streak</span>' +
+      '</div>' +
+      '<div class="sgrid">' + cells + '</div>' +
+      '<div style="display:flex;gap:14px;margin-top:10px;font-size:12px;color:var(--color-text-secondary);">' +
+        '<span><span class="lbox" style="background:#1D9E75;"></span>Done</span>' +
+        '<span><span class="lbox" style="background:#9FE1CB;"></span>Today</span>' +
+        '<span><span class="lbox" style="background:var(--color-background-secondary);"></span>Missed</span>' +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+// ── Calendar ────────────────────────────────────────────────────
+function renderCalendar() {
+  var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-label').textContent = months[calM] + ' ' + calY;
+  var wdays = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  document.getElementById('cal-wdays').innerHTML = wdays.map(function(d){ return '<div class="cwday">'+d+'</div>'; }).join('');
+
+  var habits = getHabits();
+  var events = getEvents();
+  var today = todayStr();
+  var habitDates = {};
+  habits.forEach(function(h) {
+    Object.keys(h.completions||{}).forEach(function(d){ habitDates[d] = true; });
+  });
+  var eventDates = {};
+  events.forEach(function(e){ eventDates[e.date] = true; });
+
+  var firstDay = new Date(calY, calM, 1).getDay();
+  var dim = new Date(calY, calM+1, 0).getDate();
+  var html = '';
+  for (var i = 0; i < firstDay; i++) html += '<div></div>';
+  for (var d = 1; d <= dim; d++) {
+    var ds = calY + '-' + pad(calM+1) + '-' + pad(d);
+    var hasH = !!habitDates[ds];
+    var hasE = !!eventDates[ds];
+    var isT = ds === today;
+    var cls = 'cday';
+    if (hasH && hasE) cls += ' has-both';
+    else if (hasH) cls += ' has-habit';
+    else if (hasE) cls += ' has-event';
+    if (isT) cls += ' is-today';
+    var dot = (hasH || hasE) ? '<div class="cdot" style="background:' + (hasH ? '#1D9E75' : '#534AB7') + '"></div>' : '';
+    html += '<div class="' + cls + '"><span>' + d + '</span>' + dot + '</div>';
+  }
+  document.getElementById('cal-days').innerHTML = html;
+}
+
+function changeMonth(delta) {
+  calM += delta;
+  if (calM < 0) { calM = 11; calY--; }
+  if (calM > 11) { calM = 0; calY++; }
+  renderCalendar();
+}
+
+// ── Render all ──────────────────────────────────────────────────
+function renderAll() {
+  renderDashboard();
+  renderHabits();
+  renderEvents();
+  renderStreaks();
+  renderCalendar();
+}
+
+// ── Escape HTML ─────────────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Event delegation (fixes onclick inside innerHTML) ────────────
+document.addEventListener('click', function(e) {
+  // Habit toggle — circle buttons
+  var circle = e.target.closest('.circle');
+  if (circle) {
+    var hid = circle.getAttribute('data-hid');
+    if (hid) { toggleHabit(hid); return; }
+  }
+  // Habit delete
+  var del = e.target.closest('.del-btn');
+  if (del) {
+    var did = del.getAttribute('data-did');
+    if (did) { deleteHabit(did); return; }
+    var eid = del.getAttribute('data-eid');
+    if (eid) { deleteEvent(eid); return; }
+  }
+  // Add event button
+  if (e.target.id === 'ev-add-btn') { addEvent(); return; }
+  // Calendar nav
+  if (e.target.id === 'cal-prev') { changeMonth(-1); return; }
+  if (e.target.id === 'cal-next') { changeMonth(1); return; }
+});
+
+function deleteEvent(id) {
+  putEvents(getEvents().filter(function(e){ return e.id !== id; }));
+  renderEvents();
+  renderDashboard();
+}
+
+// ── Auto-restore session ────────────────────────────────────────
+(function() {
+  var sess = S.get('hl_session');
+  var users = getUsers();
+  if (sess && users[sess]) {
+    startSession(sess);
+  } else {
+    document.getElementById('e-date').value = todayStr();
+  }
+})();
+</script>
+</body>
+</html>
